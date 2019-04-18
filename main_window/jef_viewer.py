@@ -1,6 +1,7 @@
 # This Python file uses the following encoding: utf-8
 import sys
 
+from PyQt5 import QtGui
 from PySide2.QtCore import SIGNAL
 from PySide2.QtWidgets import QApplication, QMainWindow
 from PySide2.QtWidgets import QDesktopWidget
@@ -12,7 +13,9 @@ from colors.color_models import PatternColorModel
 
 class MainWindow(QMainWindow):
     def __init__(self, parent = None):
-        QMainWindow.__init__(self, parent)
+        # TODO Changed the way __init__ is called, verify this is equivalent
+        # QMainWindow.__init__(self, parent)
+        super(MainWindow, self).__init__()
 
         self.setWindowTitle("Viewer for Janome Embroidery Files [*]")
 
@@ -32,13 +35,15 @@ class MainWindow(QMainWindow):
 
         # File menu
         self.fileMenu = self.mainMenu.addMenu("&File")
-        open_action = self.fileMenu.addAction("&Open")
+        open_action = self.fileMenu.addAction("&Open File")
         open_action.setShortcut(QKeySequence.Open)
+        open_action.setStatusTip('Open a JEF file')
 
         saveAsAction = self.fileMenu.addAction("Save &As...")
 
         quitAction = self.fileMenu.addAction("E&xit")
         quitAction.setShortcut("Ctrl+Q")
+        quitAction.setStatusTip("Quit jef_viewer")
 
         # View menu
         self.viewMenu = self.menuBar().addMenu("&View")
@@ -49,17 +54,19 @@ class MainWindow(QMainWindow):
 
         # Tools menu
         self.toolsMenu = self.menuBar().addMenu("&Tools")
-        self.toolsMenu.addAction(self.colorDockAction)
+        # TODO add tools menu options
+        # self.toolsMenu.addAction(self.colorDockAction)
 
     def _create_color_dock_widget(self):
-        self.colourDockWidget = ColorDockWidget(self.colorModel, self)
-        self.addDockWidget(Qt.RightDockWidgetArea, self.colourDockWidget)
-        self.colourDockWidget.hide()
-        return self.colourDockWidget.toggleViewAction()
-
+        # TODO create color dock widget
+        # self.colourDockWidget = ColorDockWidget(self.colorModel, self)
+        # self.addDockWidget(Qt.RightDockWidgetArea, self.colourDockWidget)
+        # self.colourDockWidget.hide()
+        # return self.colourDockWidget.toggleViewAction()
+        return
 
 if __name__ == "__main__":
-    app = QApplication([])
+    app = QApplication(sys.argv)
     window = MainWindow()
     window.resize(QDesktopWidget().availableGeometry().size() * 0.75)
     window.show()
