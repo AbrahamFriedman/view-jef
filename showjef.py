@@ -71,8 +71,8 @@ class Convertor:
 
         i = 0
         for thread in range(self.jef.threads):
-            colour = QColor(*self.jef.colour_for_thread(i))
-            pen = QPen(colour)
+            color = QColor(*self.jef.color_for_thread(i))
+            pen = QPen(color)
             coordinates = self.jef.coordinates[i]
             self.show_coords(coordinates, pen, scene)
             i += 1

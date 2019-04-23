@@ -17,7 +17,7 @@ class PatternColorItem(QStandardItem):
         self._colors = jef_colors.color_mappings[internal_color]
 
         for thread_type in jef_colors.color_groups:
-            if self._colors.has_key(thread_type):
+            if thread_type in self._colors:
                 self.thread_type = thread_type
                 break
         else:
@@ -53,7 +53,8 @@ class PatternColorItem(QStandardItem):
         code = self._colors[thread_type]
         name, color = jef_colors.known_colors[thread_type][code]
 
-        self.setText(QApplication.translate("PatternColorItem", "%1: %2 (%3)").arg(code).arg(name, thread_type))
+        # self.setText(QApplication.translate("PatternColorItem", "%1: %2 (%3)").arg(code).arg(name, thread_type))
+        self.setText(QApplication.translate("PatternColorItem", "{}: {} ({})").format(code, name, thread_type))
         self.setData(QVariant(QColor(color)), Qt.DecorationRole)
         self.setData(QVariant(Qt.Checked), Qt.CheckStateRole)
         self.setFlags(Qt.ItemIsEnabled | Qt.ItemIsUserCheckable | Qt.ItemIsSelectable)
@@ -69,15 +70,16 @@ class PatternColorModel(QStandardItemModel):
 
         # TODO SIGNAL
         # self.connect(self, SIGNAL("itemChanged(QStandardItem *)"),
-        #              self, SIGNAL("colorChanged()"))
+        #              self, SIGNAL("colourChanged()"))
         # self.connect(self, SIGNAL("itemChanged(QStandardItem *)"),
         #              self.updatePattern)
 
-    def setBackground(self, color):
-        self.background = color
-        self.emit(SIGNAL("backgroundChanged()"))
+    def set_background(self, colour):
+        self.background = colour
+        # TODO SIGNAL
+        # self.emit(SIGNAL("backgroundChanged()"))
 
-    def setPattern(self, pattern):
+    def set_pattern(self, pattern):
         self.pattern = pattern
 
         # Update the colors in the list with those from the pattern.
@@ -87,7 +89,7 @@ class PatternColorModel(QStandardItemModel):
             item = PatternColorItem(internal_color)
             self.appendRow(item)
 
-    def updatePattern(self, item):
+    def update_pattern(self, item):
         self.pattern.set_color(item.row(), item.internalColor())
 
 
@@ -138,8 +140,7 @@ class ColorModel(QAbstractTableModel):
         self.colors = []
         self.headers = list(jef_colors.color_groups)
 
-        keys = jef_colors.color_mappings.keys()
-        keys.sort()
+        keys = sorted(jef_colors.color_mappings)
 
         for internal_color in keys:
             item = ColorItem(internal_color)

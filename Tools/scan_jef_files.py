@@ -28,13 +28,13 @@ if __name__ == "__main__":
     for path in paths:
 
         j = jef.Pattern(path)
-        for i in range(len(j.colours)):
-            if not jef.jef_colours.colours.has_key(j.colours[i]):
-                if jef.jef_colours.measured_colours.colours.has_key(j.colours[i]):
+        for i in range(len(j.colors)):
+            if not jef.jef_colors.colors.has_key(j.colors[i]):
+                if jef.jef_colors.measured_colors.colors.has_key(j.colors[i]):
                     print
-                    path, i + 1, hex(j.colours[i]), "(measured value)"
+                    path, i + 1, hex(j.colors[i]), "(measured value)"
                 else:
                     print
-                    path, i + 1, hex(j.colours[i])
+                    path, i + 1, hex(j.colors[i])
 
     sys.exit()

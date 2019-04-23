@@ -1,6 +1,6 @@
 """
 convert_html_to_module.py - Converts HTML from threadchart.info into a Python
-                            module with colour data.
+                            module with color data.
 """
 
 import sys
@@ -26,8 +26,8 @@ if __name__ == "__main__":
     groups = {}
 
     for i in range(0, len(lines), 2):
-        colour_line = lines[i]
-        colour = colour_line[colour_line.rfind("#"):colour_line.rfind("'")]
+        color_line = lines[i]
+        color = color_line[color_line.rfind("#"):color_line.rfind("'")]
         description = lines[i + 1].split("<br>")
         number = int(description[0][description[0].rfind("#") + 1:])
         group = description[1]
@@ -35,8 +35,8 @@ if __name__ == "__main__":
 
         name = " ".join(name.split("\xa0"))
 
-        colours = groups.setdefault(group, {})
-        colours[number] = (name, colour)
+        colors = groups.setdefault(group, {})
+        colors[number] = (name, color)
 
     f = open(python_module, "w")
 
@@ -45,16 +45,16 @@ if __name__ == "__main__":
 
     f.write("groups = {\n")
 
-    for group, colours in groups.items():
+    for group, colors in groups.items():
 
         f.write('  "' + group + '": {\n')
         f.write('    # code: (name, RGB)\n')
-        codes = colours.keys()
+        codes = colors.keys()
         codes.sort()
 
         for code in codes:
-            name, colour = colours[code]
-            f.write('    ' + str(code) + ': ("' + name + '", "' + colour + '"),\n')
+            name, color = colors[code]
+            f.write('    ' + str(code) + ': ("' + name + '", "' + color + '"),\n')
 
         f.write('  },\n')
 

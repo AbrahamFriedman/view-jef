@@ -10,7 +10,7 @@ class ColorDockWidget(QDockWidget):
 
     def __init__(self, colorModel, parent = None):
 
-        QDockWidget.__init__(self, qApp.translate("ColorDockWidget", "&Colors"), parent)
+        QDockWidget.__init__(self, "&Colors", parent)
 
         self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
 
@@ -26,7 +26,7 @@ class ColorDockWidget(QDockWidget):
         # self.connect(colorList, SIGNAL("activated(QModelIndex)"),
         #              self.editColor)
 
-        self.backgroundButton = QPushButton(self.tr("&Background Color"))
+        self.backgroundButton = QPushButton("&Background Color")
         # TODO SIGNAL
         # self.connect(self.backgroundButton, SIGNAL("clicked()"), self.selectBackground)
         self._set_background_button_color(colorModel.background)
@@ -38,7 +38,7 @@ class ColorDockWidget(QDockWidget):
 
         self.setWidget(widget)
 
-    def editColor(self, index):
+    def edit_color(self, index):
 
         item = self.colorModel.itemFromIndex(index)
 
@@ -49,16 +49,16 @@ class ColorDockWidget(QDockWidget):
             if color and thread_type:
                 item.setColor(color, thread_type)
 
-    def selectBackground(self):
+    def select_background(self):
 
         color = QColorDialog.getColor(self.colorModel.background, self)
         if color.isValid():
-            self.setBackground(color)
+            self.set_background(color)
 
-    def setBackground(self, color):
+    def set_background(self, color):
 
         self._set_background_button_color(color)
-        self.colorModel.setBackground(color)
+        self.colorModel.set_background(color)
 
     def _set_background_button_color(self, color):
 
@@ -67,6 +67,6 @@ class ColorDockWidget(QDockWidget):
         pixmap.fill(color)
         self.backgroundButton.setIcon(QIcon(pixmap))
 
-    def setPattern(self, pattern):
+    def set_pattern(self, pattern):
 
-        self.colorModel.setPattern(pattern)
+        self.colorModel.set_pattern(pattern)

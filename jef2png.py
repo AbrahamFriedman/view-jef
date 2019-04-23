@@ -45,7 +45,7 @@ class Convertor:
         i = 0
         for i in range(self.jef.threads):
 
-            colour = QColor(*self.jef.colour_for_thread(i))
+            color = QColor(*self.jef.color_for_thread(i))
             coordinates = self.jef.coordinates[i]
 
             if not self.stitches_only:
@@ -55,7 +55,7 @@ class Convertor:
                 for op, x, y in coordinates:
                     painter.drawEllipse(x - 2, -y - 2, 4, 4)
 
-            pen = QPen(colour)
+            pen = QPen(color)
             painter.setPen(pen)
 
             mx, my = 0, 0
@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
     if not 4 <= len(sys.argv) <= 7:
         sys.stderr.write(
-            "Usage: %s [--background=<colour>] [--stitches-only] [--quality=high|low] <dimensions> <JEF file> <PNG file>\n" %
+            "Usage: %s [--background=<color>] [--stitches-only] [--quality=high|low] <dimensions> <JEF file> <PNG file>\n" %
             sys.argv[0])
         sys.exit(1)
 
@@ -97,10 +97,10 @@ if __name__ == "__main__":
 
     background = read_argument("--background=", sys.argv)
     if background is False:
-        background_colour = qRgba(0, 0, 0, 0)
+        background_color = qRgba(0, 0, 0, 0)
     else:
-        colour = QColor(background)
-        background_colour = qRgba(colour.red(), colour.green(), colour.blue(), colour.alpha())
+        color = QColor(background)
+        background_color = qRgba(color.red(), color.green(), color.blue(), color.alpha())
 
     quality = read_argument("--quality=", sys.argv)
     if quality is False:
@@ -129,7 +129,7 @@ if __name__ == "__main__":
     rect = convertor.bounding_rect()
 
     image = QImage(rect.width(), rect.height(), QImage.Format_ARGB32)
-    image.fill(background_colour)
+    image.fill(background_color)
 
     painter = QPainter()
     painter.begin(image)

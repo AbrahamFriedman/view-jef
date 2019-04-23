@@ -125,31 +125,31 @@ if __name__ == "__main__":
     pattern = jef.Pattern()
     pattern.threads = len(paths)
 
-    groups, known, default, mappings = jef_colors.read_colours()
+    groups, known, default, mappings = jef_colors.read_colors()
 
     inverse_mappings = {}
-    for internal_code, group_colour in mappings.items():
+    for internal_code, group_color in mappings.items():
 
-        for group, colour_code in group_colour.items():
-            inverse_mappings[(group, colour_code)] = internal_code
+        for group, color_code in group_color.items():
+            inverse_mappings[(group, color_code)] = internal_code
 
-    colours = {}
+    colors = {}
     for group in groups:
 
         if not known.has_key(group):
             continue
 
-        for colour_code, (name, rgb) in known[group].items():
-            if not colours.has_key(rgb):
-                internal_code = inverse_mappings.get((group, colour_code), 2)
-                colours[rgb] = internal_code
+        for color_code, (name, rgb) in known[group].items():
+            if not colors.has_key(rgb):
+                internal_code = inverse_mappings.get((group, color_code), 2)
+                colors[rgb] = internal_code
 
     cx, cy = 0, 0
 
     for style, path in paths:
 
         rgb = style.get(u"stroke", u"#000000").upper()
-        internal_code = colours.get(rgb, 2)
+        internal_code = colors.get(rgb, 2)
 
         coordinates = []
 
@@ -196,7 +196,7 @@ if __name__ == "__main__":
 
         if coordinates:
             pattern.coordinates.append(coordinates)
-            pattern.colours.append(internal_code)
+            pattern.colors.append(internal_code)
             pattern.thread_types.append(13)
 
     # Translate the pattern to be centred about the origin.

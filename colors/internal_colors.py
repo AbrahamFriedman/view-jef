@@ -1,4 +1,4 @@
-# Internal Janome colour code to various thread codes.
+# Internal Janome color code to various thread codes.
 
 order = (
   "Janome",
@@ -250,12 +250,12 @@ def convert_to_csv(path):
     
     for group in order:
     
-        colours = groups[group]
+        colors = groups[group]
         for row in rows:
     
             i = row[0]
-            colour = colours.get(i, "")
-            row.append(colour)
+            color = colors.get(i, "")
+            row.append(color)
     
     for row in rows:
         w.writerow(row)

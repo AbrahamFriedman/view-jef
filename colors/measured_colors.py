@@ -1,3 +1,3 @@
-# Colour mappings found from various patterns.
+# Color mappings found from various patterns.
 
-colours = {}
+colors = {}

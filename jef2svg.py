@@ -36,7 +36,7 @@ class Convertor:
         i = 0
         for i in range(self.jef.threads):
 
-            colour = QColor(*self.jef.colour_for_thread(i))
+            color = QColor(*self.jef.color_for_thread(i))
             coordinates = self.jef.coordinates[i]
 
             if not self.stitches_only:
@@ -46,7 +46,7 @@ class Convertor:
                 for op, x, y in coordinates:
                     painter.drawEllipse(x - 2, -y - 2, 4, 4)
 
-            pen = QPen(colour)
+            pen = QPen(color)
             painter.setPen(pen)
 
             path = QPainterPath()
