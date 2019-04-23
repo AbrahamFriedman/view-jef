@@ -52,16 +52,14 @@ class MainWindow(QMainWindow):
         open_file_action = QAction("Open File...", self)
         open_file_action.setStatusTip("Open a JEF file")
         open_file_action.setShortcut(QKeySequence.Open)
-        # TODO Change method self.close
         open_file_action.triggered.connect(self.open_file_dialog)
         file_menu.addAction(open_file_action)
 
         # File menu - Save As
         save_file_action = QAction("Save &As...", self)
         save_file_action.setStatusTip("Save a JEF file")
-        save_file_action.setShortcut("Cmd-S")
-        # TODO Change method self.close
-        save_file_action.triggered.connect(self.close)
+        save_file_action.setShortcut(QKeySequence.SaveAs)
+        save_file_action.triggered.connect(self.save_file_dialog)
         file_menu.addAction(save_file_action)
 
         # File menu - Quit
@@ -106,7 +104,6 @@ class MainWindow(QMainWindow):
     def open_file_dialog(self):
         # TODO check for no file selected on open
         # TODO unicode
-        path = None
         # path = unicode(
         #     QFileDialog.getOpenFileName(
         #         self, self.tr("Open File"), os.path.split(self.path)[0],
@@ -133,19 +130,20 @@ class MainWindow(QMainWindow):
 
     def save_file_dialog(self):
         # TODO unicode
-        path = None
         # path = unicode(
         #     QFileDialog.getSaveFileName(
         #         self, self.tr("Save File"), os.path.split(self.path)[0],
         #         self.tr("Janome Embroidery Files (*.jef *.JEF)"))
         # )
+        # getSaveFileName() returns a tuple with [0[ = absolute filename, [1] = filter. We only want the name.
+        path = QFileDialog.getSaveFileName(self, "Save File", os.path.dirname(self.path),
+                                           "Janome Embroidery Files (*.jef *.JEF)")
 
         if path:
-            self.save_file(path)
+            self.save_file(path[0])
 
     def save_file(self, path):
         # TODO unicode
-        path = None
         # path = unicode(path)
 
         qApp.setOverrideCursor(Qt.WaitCursor)
@@ -155,6 +153,6 @@ class MainWindow(QMainWindow):
         if saved:
             self.setWindowModified(False)
             self.path = path
-            self.setWindowTitle("%1 - Viewer for Janome Embroidery Files [*]".arg(path))
+            self.setWindowTitle("{} - Viewer for Janome Embroidery Files [*]".format(path))
         else:
             QMessageBox.warning(self, "Failed to save file.")

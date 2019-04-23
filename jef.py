@@ -1,63 +1,73 @@
 """
 jef.py - Read and write JEF files.
+
+The Janome Embroidery Format (JEF) is a binary file that consists of several sections. Multi-byte numbers appear to be stored little endian.
+There is a JEF+ format which this does not cover. The structure of a JEF file is as follows:
+   - File-header
+   - Thread-color list
+   - Thread-type list
+   - Stitch list
+
+The format specification can be found in these places:
+   https://community.kde.org/Projects/Liberty/File_Formats/Janome_Embroidery_Format
+   https://edutechwiki.unige.ch/en/Embroidery_format_JEF
+
+There may be a problem with the specification of the hoop values in the unique.ch version of the spec.
+
+The values for the decode() and encode() are specified by the format character as described below:
+struct.unpack formats:
+    Character < -> decode using little-endian byte order
+    Format  C Type             Python Type  Size
+    b       signed char        integer      1
+    i       int                integer      4
+    I       unsigned int       integer      4
+
+The JEF file header is a fixed block of 116 (dec) or 0x74 (hex) bytes as follows:
+    Start  End  Type  Bytes  Value                          Description
+        0    3   u32      4  0x74 + 8 * Color_Changes       Offset into file where stitches begin
+                        116 dec + 8 * Color Changes
+        4    7   u32      4  0x01, 0x0A, 0x14               Flags/Unknown
+                             1 (dec), 10 (dec), 20 (dec)
+        8   21  char     14  "20180712082429" (example)     Date
+       22   22  char      1  m, n, o, p, q, r, s, or t      Version Letter: (Not always set)
+                                                                m = 12000
+                                                                n = 11000
+                                                                o = 10000 v3
+                                                                p = 10000 v2.2
+                                                                q =  9000
+                                                                r = mc350
+                                                                s = mc200
+                                                                t = mb4
+       23   23   u8      1  0x20                           Unknown
+       24   27  u32      4  Color Count                    Color Count
+       28   31  u32      4  Points Length / 2              Points Length / 2. So 80 01 00 00 is 2 not 1
+       32   35  u32      4  Hoop Used (0-4)                Hoop
+       36   51  u32     16  Extends                        Distance from center of hoop
+       52   67  u32     16  Edge amount for hoop           Distance from default 110 x 110 Hoop, or -1,-1,-1,-1
+       68   83  u32     16  Edge amount for hoop           Distance from default 50 x 50 Hoop, or -1,-1,-1,-1
+       84   99  u32     16  Edge amount for hoop           Distance from default 140 x 200 hoop or -1,-1,-1,-1
+      100  115  u32     16  Edge amount for hoop           Distance from custom hoop, or -1,-1,-1,-1
+                                                               -1,-1,-1,-1 indicates if it does not fit
+      116    *  u32    4*n Magic Number Color Lookup       List of color changes where n = Color_Changes
+        *    *  u32    4*n 0xOD                            The values 0x0D, 0x0D, 0X0D repeated as many times as
+                                                               there are color changes
+                                                               
+The hoop code starts at the 32nd (dec) position and contains the values 0-4 which describe the various hoops
+that can be specified. The width and height of the hoops are specified differently in the kde.org and the unige.ch
+versions of the spec but the kde.org numbers appear to match those found in other sources and so they are used here.
+
+    Hoop (from code below)
+    Value  Width  Height  Name
+        0    126     100     A Standard
+        1     50      50     C Free Arm
+        2    140     200     B Large
+        3    126     110     F Spring Loaded
+        4    230     200     D Giga
 """
 
 import struct, sys, time
 
 from colors import jef_colors
-
-
-# struct.unpack formats:
-# Character < -> decode using little-endian byte order
-# Format  C Type             Python Type  Size
-# b       signed char        integer      1
-# i       int                integer      4
-# I       unsigned int       integer      4
-
-# Taken from: https://edutechwiki.unige.ch/en/Embroidery_format_JEF
-# JEF Header
-# Start  End  Type  Bytes  Value                          Description
-#     0    3   u32      4  0x74 +8 * Color_Changes        Offset into file where stitches begin
-#     4    7   u32      4  0x14                           Unknown
-#     8   21  char     14  "20180712082429" (example)     Date
-#    22   22  char      1  m, n, o, p, q, r, s, or t      Version Letter: (Not always set)
-#                                                             m = 12000
-#                                                             n = 11000
-#                                                             o = 10000 v3
-#                                                             p = 10000 v2.2
-#                                                             q =  9000
-#                                                             r = mc350
-#                                                             s = mc200
-#                                                             t = mb4
-#    23   23   u8      1  0x20                           Unknown
-#    24   27  u32      4  Color Count                    Color Count
-#    28   31  u32      4  Points Length / 2              Points Length / 2. So 80 01 00 00 is 2 not 1
-#    32   35  u32      4  Hoop Used                      Hoop
-#    36   51  u32     16  Extends                        Distance from center of hoop
-#    52   67  u32     16  Edge amount for hoop           Distance from default 110 x 110 Hoop, or -1,-1,-1,-1
-#    68   83  u32     16  Edge amount for hoop           Distance from default 50 x 50 Hoop, or -1,-1,-1,-1
-#    84   99  u32     16  Edge amount for hoop           Distance from default 140 x 200 hoop or -1,-1,-1,-1
-#   100  115  u32     16  Edge amount for hoop           Distance from custom hoop, or -1,-1,-1,-1
-#                                                            -1,-1,-1,-1 indicates if it does not fit
-#   116    *  u32    4*n Magic Number Color Lookup       List of color changes where n = Color_Changes
-#     *    *  u32    4*n 0xOD                            The values 0x0D, 0x0D, 0X0D repeated as many times as
-#                                                            there are color changes
-
-# Hoop (from https://edutechwiki.unige.ch/en/Embroidery_format_JEF)
-# Value  Width  Height
-#     0    110     110
-#     1     50      50
-#     2    140     200
-#     3    126     110
-#     4    200     200
-
-# Hoop (from code below)
-# Value  Width  Height  Name
-#     0    126     100     A
-#     1     50      50     C
-#     2    140     200     B
-#     3    126     110     F
-#     4    230     200     D
 
 class Pattern:
 
@@ -76,7 +86,6 @@ class Pattern:
             self.coordinates = []
 
     def load(self, path):
-        # self.data = d = open(path).read()
         self.data = d = open(path, mode='rb').read()
 
         start = struct.unpack("<I", d[:4])[0]
@@ -89,32 +98,13 @@ class Pattern:
         date_as_bytes = struct.unpack("<14s", d[8:22])     # Parse 14 characters in YYYYMMDDHHMMSS format in bytes (as a tuple)
         self.date_time = date_as_bytes[0].decode("utf-8")  # Convert bytes to str
 
-        self.threads = struct.unpack("<I", d[24:28])[0]  # Parse the Color Count
-        data_length = struct.unpack("<I", d[28:32])[0] * 2
+        self.threads = struct.unpack("<I", d[24:28])[0]  # Parse the Color Count, Thread-count number of thread changes
+        data_length = struct.unpack("<I", d[28:32])[0] * 2  # Stitch-count (*2?)
 
         # start + data_length should equal the file length.
 
         hoop_code = struct.unpack("<I", d[32:36])[0]
-
-        # Determine the hoop size in millimetres.
-        if hoop_code == 0:
-            self.hoop_size = (126, 110)
-            self.hoop_name = "A"
-        elif hoop_code == 1:
-            self.hoop_size = (50, 50)
-            self.hoop_name = "C"
-        elif hoop_code == 2:
-            self.hoop_size = (140, 200)
-            self.hoop_name = "B"
-        elif hoop_code == 3:
-            self.hoop_size = (126, 110)
-            self.hoop_name = "F"
-        elif hoop_code == 4:
-            self.hoop_size = (230, 200)
-            self.hoop_name = "D"
-        else:
-            self.hoop_size = None
-            self.hoop_name = None
+        self.hoop_size, self.hoop_name = self.decode_hoop(hoop_code)
 
         # These are coordinates specifying rectangles for the pattern.
         # It appears that the units are 0.2 mm.
@@ -155,30 +145,32 @@ class Pattern:
         thread_data = self.write_threads()
         start = 0x74 + (8 * self.threads)
 
-        self._data = ""
+        self._data = b""
         self._data += struct.pack("<I", start)  # data offset
         self._data += struct.pack("<I", 1)  # date-time flag
         if self.date_time:
-            self._data += time.strftime("%Y%m%d%H%M%S", self.date_time)
+            # self._data += time.strftime("%Y%m%d%H%M%S", self.date_time)
+            self._data += str.encode(self.date_time)
         else:
             self._data += time.strftime("%Y%m%d%H%M%S", time.localtime())
-        self._data += "\x00\x00"
+        self._data += b"\x00\x00"
 
         self._data += struct.pack("<I", self.threads)
-        self._data += struct.pack("<I", len(thread_data) / 2)
+        self._data += struct.pack("<I", int(len(thread_data) / 2))
 
-        if self.hoop_name == "A":
-            self._data += struct.pack("<I", 0)
-        elif self.hoop_name == "C":
-            self._data += struct.pack("<I", 1)
-        elif self.hoop_name == "B":
-            self._data += struct.pack("<I", 2)
-        elif self.hoop_name == "F":
-            self._data += struct.pack("<I", 3)
-        elif self.hoop_name == "D":
-            self._data += struct.pack("<I", 4)
-        else:
-            self._data += struct.pack("<I", 0)
+        self._data += self.decode_hoop(self.hoop_name)
+        # if self.hoop_name == "A":
+        #     self._data += struct.pack("<I", 0)
+        # elif self.hoop_name == "C":
+        #     self._data += struct.pack("<I", 1)
+        # elif self.hoop_name == "B":
+        #     self._data += struct.pack("<I", 2)
+        # elif self.hoop_name == "F":
+        #     self._data += struct.pack("<I", 3)
+        # elif self.hoop_name == "D":
+        #     self._data += struct.pack("<I", 4)
+        # else:
+        #     self._data += struct.pack("<I", 0)
 
         if not self.rectangles:
             # Add a bounding rectangle to the output if no rectangles are
@@ -207,7 +199,7 @@ class Pattern:
         self._data += thread_data
 
         try:
-            open(path, "w").write(self._data)
+            open(path, "wb").write(self._data)
             return True
         except IOError:
             return False
@@ -217,6 +209,13 @@ class Pattern:
         self.colors[index] = code
 
     def read_threads(self, data):
+        # Escaped-command
+        # Offset  Length  Type  Description
+        # 0       1       Byte  Escape = 128 (dec) or 0x80 (hex)
+        # 1       1       Byte  Command-code
+        #                     1 (dec) or 0x01 (hex) - Color change
+        #                     2 (dec) or 0x02 (hex) - Jump / Trim
+        #                    16 (dec) or 0x10 (hex) - End (last stitch)
 
         self.coordinates = []
         x, y = 0, 0
@@ -281,7 +280,7 @@ class Pattern:
 
     def write_threads(self):
 
-        thread_data = ""
+        thread_data = b""
 
         cx, cy = 0, 0
         first = True
@@ -291,13 +290,13 @@ class Pattern:
             if first:
                 first = False
             else:
-                thread_data += "\x80\x01"
-                thread_data += "\x00\x00"
+                thread_data += b"\x80\x01"
+                thread_data += b"\x00\x00"
 
             for command, x, y in coordinates:
 
                 if command == "move":
-                    thread_data += "\x80\x02"
+                    thread_data += b"\x80\x02"
 
                 thread_data += struct.pack("<b", x - cx)
                 thread_data += struct.pack("<b", y - cy)
@@ -305,7 +304,7 @@ class Pattern:
                 cx = x
                 cy = y
 
-        thread_data += "\x80\x10"
+        thread_data += b"\x80\x10"
         return thread_data
 
     def bounding_rect(self):
@@ -322,3 +321,44 @@ class Pattern:
             ymax.append(max(y))
 
         return (min(xmin), min(ymin), max(xmax), max(ymax))
+
+    def decode_hoop(self, hoop_code):
+        # Determine the hoop size in millimetres.
+        if hoop_code == 0:
+            hoop_size = (126, 110)
+            hoop_name = "A"
+        elif hoop_code == 1:
+            hoop_size = (50, 50)
+            hoop_name = "C"
+        elif hoop_code == 2:
+            hoop_size = (140, 200)
+            hoop_name = "B"
+        elif hoop_code == 3:
+            hoop_size = (126, 110)
+            hoop_name = "F"
+        elif hoop_code == 4:
+            hoop_size = (230, 200)
+            hoop_name = "D"
+        else:
+            hoop_size = None
+            hoop_name = None
+            
+        return hoop_size, hoop_name
+    
+    def decode_hoop(self, hoop_name):
+        data = b''
+
+        if hoop_name == "A":
+            data += struct.pack("<I", 0)
+        elif hoop_name == "C":
+            data += struct.pack("<I", 1)
+        elif hoop_name == "B":
+            data += struct.pack("<I", 2)
+        elif hoop_name == "F":
+            data += struct.pack("<I", 3)
+        elif hoop_name == "D":
+            data += struct.pack("<I", 4)
+        else:
+            data += struct.pack("<I", 0)
+
+        return data
