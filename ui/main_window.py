@@ -2,9 +2,10 @@ import os
 
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-from PyQt5.QtWidgets import QMainWindow, QAction, QFileDialog, qApp, QMessageBox
+from PyQt5.QtWidgets import QMainWindow, QAction, QFileDialog, qApp, QMessageBox, QVBoxLayout, QPushButton
 
 import jef
+from ui.info_popup import InfoPopup
 from ui.renderer import Renderer
 from colors.color_models import PatternColorModel
 from ui.canvas import Canvas, CanvasView
@@ -41,6 +42,9 @@ class MainWindow(QMainWindow):
         self.area.setAlignment(Qt.AlignCenter)
 
         self.setCentralWidget(self.area)
+
+        # Popup box
+        self.info_popup = InfoPopup(self.pattern)
 
     def create_menu_bar(self):
         main_menu = self.menuBar()
@@ -91,6 +95,13 @@ class MainWindow(QMainWindow):
         zoom_out_action.triggered.connect(self.canvas.zoom_out)
         viewMenu.addAction(zoom_out_action)
 
+        # View menu - Info Popup
+        info_popup_action = QAction("Info...", self)
+        info_popup_action.setStatusTip("Display information popup")
+        info_popup_action.setShortcut(QKeySequence.Replace)
+        info_popup_action.triggered.connect(self.open_info_popup)
+        viewMenu.addAction(info_popup_action)
+
         # Tools menu - color dock
         # TODO add tools menu options
         toolsMenu.addAction(self._create_color_dock_widget())
@@ -120,7 +131,8 @@ class MainWindow(QMainWindow):
         # TODO unicode
         # path = unicode(path)
         self.pattern = jef.Pattern(path)
-
+        # TODO Check this
+        self.info_popup.update_values(self.pattern)
         qApp.setOverrideCursor(Qt.WaitCursor)
         self.path = path
         self.colorDockWidget.set_pattern(self.pattern)
@@ -156,3 +168,9 @@ class MainWindow(QMainWindow):
             self.setWindowTitle("{} - Viewer for Janome Embroidery Files [*]".format(path))
         else:
             QMessageBox.warning(self, "Failed to save file.")
+
+    def open_info_popup(self):
+        self.info_popup.show()
+
+    def toggle_info_popup(self):
+        self.info_popup.hide()

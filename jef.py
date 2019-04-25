@@ -345,7 +345,7 @@ class Pattern:
             
         return hoop_size, hoop_name
     
-    def decode_hoop(self, hoop_name):
+    def encode_hoop(self, hoop_name):
         data = b''
 
         if hoop_name == "A":
