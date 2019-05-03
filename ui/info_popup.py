@@ -45,11 +45,11 @@ class InfoPopup(QWidget):
         self.layout.addWidget(unknown_label, 5, 0)
 
         color_changes_label = QLabel()
-        color_changes_label.setText("Color Changes:")
+        color_changes_label.setText("Thread Colors:")
         self.layout.addWidget(color_changes_label, 6, 0)
 
         points_length_label = QLabel()
-        points_length_label.setText("Points Length:")
+        points_length_label.setText("Stitch Count:")
         self.layout.addWidget(points_length_label, 7, 0)
 
         hoop_label = QLabel()
@@ -65,16 +65,20 @@ class InfoPopup(QWidget):
         self.layout.addWidget(extends2_label, 10, 0)
 
         extends3_label = QLabel()
-        extends3_label.setText("Extends (Distance from default 50 x 50 Hoop):")
+        extends3_label.setText("Extends (Distance from default 50 x 50 Hoop C):")
         self.layout.addWidget(extends3_label, 11, 0)
 
         extends4_label = QLabel()
-        extends4_label.setText("Extends (Distance from default 140 x 200 hoop):")
+        extends4_label.setText("Extends (Distance from default 140 x 200 Hoop B):")
         self.layout.addWidget(extends4_label, 12, 0)
 
         extends5_label = QLabel()
         extends5_label.setText("Extends (Distance from custom hoop):")
         self.layout.addWidget(extends5_label, 13, 0)
+
+        size_label = QLabel()
+        size_label.setText("Embroidery Size:")
+        self.layout.addWidget(size_label, 14, 0)
 
         # for color in colors:
         #     date_label = QLabel()
@@ -124,5 +128,62 @@ class InfoPopup(QWidget):
         self.extends5_name_value = QLabel()
         self.layout.addWidget(self.extends5_name_value, 13, 1)
 
+        self.embroidery_size_name_value = QLabel()
+        self.layout.addWidget(self.embroidery_size_name_value, 14, 1)
+
     def update_values(self, pattern):
+        self.file_name_value.setText(pattern.file_name)
+
+        size = int(pattern.data_size)
+        self.size_name_value.setText(f'{size:,}')
+        self.flags_name_value.setText(pattern.hoop_name)
+
+        d = pattern.date_time
+        date = d[4:6] + '/' + d[6:8] + '/' + d[0:4] + ' ' + d[8:10] + ':' + d[10:12] + ':' + d[12:14]
+        self.date_name_value.setText(date)
+
+        self.version_name_value.setText(pattern.version)
+        self.unknown_name_value.setText(pattern.hoop_name)
+        self.color_changes_name_value.setText(str(pattern.threads))
+
+        size = pattern.data_length / 2
+        self.points_length_name_value.setText(f'{size:,}')
         self.hoop_name_value.setText(pattern.hoop_name)
+
+        if len(pattern.rectangles) > 0:
+            (x1, y1, x2, y2) = pattern.rectangles[0]
+            self.extends1_name_value.setText(f'({x1}, {y1}), ({x2}, {y2})')
+        else:
+            self.extends1_name_value.setText('None')
+
+        if len(pattern.rectangles) > 1:
+            (x1, y1, x2, y2) = pattern.rectangles[1]
+            self.extends2_name_value.setText(f'({x1}, {y1}), ({x2}, {y2})')
+        else:
+            self.extends2_name_value.setText('None')
+
+        if len(pattern.rectangles) > 2:
+            (x1, y1, x2, y2) = pattern.rectangles[2]
+            self.extends3_name_value.setText(f'({x1}, {y1}), ({x2}, {y2})')
+        else:
+            self.extends3_name_value.setText('None')
+
+        if len(pattern.rectangles) > 3:
+            (x1, y1, x2, y2) = pattern.rectangles[3]
+            self.extends4_name_value.setText(f'({x1}, {y1}), ({x2}, {y2})')
+        else:
+            self.extends4_name_value.setText('None')
+
+        if len(pattern.rectangles) > 4:
+            (x1, y1, x2, y2) = pattern.rectangles[4]
+            self.extends5_name_value.setText(f'({x1}, {y1}), ({x2}, {y2})')
+        else:
+            self.extends5_name_value.setText('None')
+
+        (x1, y1, x2, y2) = pattern.rectangles[0]
+        w_mm = (x2 * 2) * 0.1
+        h_mm = (y2 * 2) * 0.1
+        w_in = w_mm / 2.54 * 0.1
+        h_in = h_mm / 2.54 * 0.1
+        size = f'{round(w_mm, 2)} mm x {round(h_mm, 2)} mm / {round(w_in, 2)} inches x {round(h_in, 2)} inches'
+        self.embroidery_size_name_value.setText(size)

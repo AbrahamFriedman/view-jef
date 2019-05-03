@@ -69,6 +69,7 @@ import struct, sys, time
 
 from colors import jef_colors
 
+
 class Pattern:
 
     def __init__(self, path=None):
@@ -86,28 +87,68 @@ class Pattern:
             self.coordinates = []
 
     def load(self, path):
+        self.file_name = path
+
         self.data = d = open(path, mode='rb').read()
+        self.data_size = len(d)
 
-        start = struct.unpack("<I", d[:4])[0]
-        data = d[start:]
+        (offset, flags, date, version, unknown, color_count, points_length, hoop, extends1, extends2, extends3,
+            extends4, extends5) = self.parse_file(d)
 
+        # OFFSET
+        start_of_stitches = struct.unpack("<I", offset)[0]
+        data = d[start_of_stitches:]
+
+        # FLAGS
+
+        # DATE
         # TODO Date/time dosn't seem to be parsed out of the file correctly for the WAMALUG logo
         self.date_time = None
         # if struct.unpack("<I", d[4:8])[0] & 1:
         #     self.date_time = time.strptime(d[8:22], "%Y%m%d%H%M%S")
-        date_as_bytes = struct.unpack("<14s", d[8:22])     # Parse 14 characters in YYYYMMDDHHMMSS format in bytes (as a tuple)
+        date_as_bytes = struct.unpack("<14s", date)  # Parse 14 characters in YYYYMMDDHHMMSS format in bytes
         self.date_time = date_as_bytes[0].decode("utf-8")  # Convert bytes to str
 
-        self.threads = struct.unpack("<I", d[24:28])[0]  # Parse the Color Count, Thread-count number of thread changes
-        data_length = struct.unpack("<I", d[28:32])[0] * 2  # Stitch-count (*2?)
+        # VERSION
+        if version == b"\x00":
+            self.version = "Undefined"
+        else:
+            self.version = struct.unpack(("<1s", version))
 
-        # start + data_length should equal the file length.
+            if self.version == 'm':
+                self.version = '12000'
+            elif self.version == 'n':
+                self.version = '11000'
+            elif self.version == 'o':
+                self.version = '10000 v3'
+            elif self.version == 'p':
+                self.version = '10000 v2.2'
+            elif self.version == 'q':
+                self.version = '9000'
+            elif self.version == 'r':
+                self.version = 'mc350'
+            elif self.version == 's':
+                self.version = 'mc200'
+            elif self.version == 't':
+                self.version = 'mb4'
+            else:
+                self.version = 'Unknown'
 
-        hoop_code = struct.unpack("<I", d[32:36])[0]
+        # UNKNOWN
+
+        # COLOR COUNT
+        self.threads = struct.unpack("<I", color_count)[0]
+
+        # NUMBER OF POINTS - STITCH COUNT
+        self.number_of_points = struct.unpack("<I", points_length)[0]  # Number of start locations + end locations
+        self.stitch_count = self.number_of_points * 2
+
+        # HOOP
+        hoop_code = struct.unpack("<I", hoop)[0]
         self.hoop_size, self.hoop_name = self.decode_hoop(hoop_code)
 
-        # These are coordinates specifying rectangles for the pattern.
-        # It appears that the units are 0.2 mm.
+        # EXTENDS 1-5
+        # These are coordinates specifying rectangles for the pattern in 0.1 mm.
         self.rectangles = []
         offset = 0x24
         while offset < 0x74:
@@ -138,6 +179,25 @@ class Pattern:
             thread_type_offset += 4
 
         self.read_threads(data)
+
+    def parse_file(self, d):
+        offset        = d[:4]
+        flags         = d[4:8]
+        date          = d[8:22]
+        version       = d[22:23]
+        unknown       = d[23:24]
+        color_count   = d[24:28]
+        points_length = d[28:32]
+        hoop          = d[32:36]
+        extends1      = d[36:52]
+        extends2      = d[52:68]
+        extends3      = d[68:84]
+        extends4      = d[84:100]
+        extends5      = d[100:116]
+
+        return (
+            offset, flags, date, version, unknown, color_count, points_length, hoop, extends1, extends2, extends3,
+            extends4, extends5)
 
     def save(self, path):
 
@@ -225,8 +285,8 @@ class Pattern:
         i = 0
 
         while i < len(data):
-            b0 = data[i:i+1]
-            b1 = data[i+1:i+2]
+            b0 = data[i:i + 1]
+            b1 = data[i + 1:i + 2]
             # if data[i:i + 2] == "\x80\x01":
             if (b0 == b'\x80') and (b1 == b'\x01'):  # COLOR_CHANGE
                 # Starting a new thread. Record the coordinates already read
@@ -254,8 +314,8 @@ class Pattern:
 
             # x += struct.unpack("<b", data[i])[0]
             # y += struct.unpack("<b", data[i + 1])[0]
-            x += int.from_bytes(data[i:i+1], byteorder='little', signed=True)
-            y += int.from_bytes(data[i+1:i + 2], byteorder='little', signed=True)
+            x += int.from_bytes(data[i:i + 1], byteorder='little', signed=True)
+            y += int.from_bytes(data[i + 1:i + 2], byteorder='little', signed=True)
 
             if command == "move":
                 coordinates.append((command, x, y))
@@ -326,37 +386,37 @@ class Pattern:
         # Determine the hoop size in millimetres.
         if hoop_code == 0:
             hoop_size = (126, 110)
-            hoop_name = "A"
+            hoop_name = "A Standard"
         elif hoop_code == 1:
             hoop_size = (50, 50)
-            hoop_name = "C"
+            hoop_name = "C Free Arm"
         elif hoop_code == 2:
             hoop_size = (140, 200)
-            hoop_name = "B"
+            hoop_name = "B Large"
         elif hoop_code == 3:
             hoop_size = (126, 110)
-            hoop_name = "F"
+            hoop_name = "F Spring Loaded"
         elif hoop_code == 4:
             hoop_size = (230, 200)
-            hoop_name = "D"
+            hoop_name = "D Giga"
         else:
             hoop_size = None
             hoop_name = None
-            
+
         return hoop_size, hoop_name
-    
+
     def encode_hoop(self, hoop_name):
         data = b''
 
-        if hoop_name == "A":
+        if hoop_name == "A Standard":
             data += struct.pack("<I", 0)
-        elif hoop_name == "C":
+        elif hoop_name == "C Free Arm":
             data += struct.pack("<I", 1)
-        elif hoop_name == "B":
+        elif hoop_name == "B Large":
             data += struct.pack("<I", 2)
-        elif hoop_name == "F":
+        elif hoop_name == "F Spring Loaded":
             data += struct.pack("<I", 3)
-        elif hoop_name == "D":
+        elif hoop_name == "D Giga":
             data += struct.pack("<I", 4)
         else:
             data += struct.pack("<I", 0)
