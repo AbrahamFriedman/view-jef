@@ -15,6 +15,7 @@ class InfoPopup(QWidget):
         self.create_value_fields()
 
         close_button = QPushButton("Close")
+        close_button.clicked.connect(lambda :self.close())
         self.layout.addWidget(close_button)
 
         self.setGeometry(QRect(100, 100, 400, 200))
@@ -136,17 +137,38 @@ class InfoPopup(QWidget):
 
         size = int(pattern.data_size)
         self.size_name_value.setText(f'{size:,}')
-        self.flags_name_value.setText(pattern.hoop_name)
+        self.flags_name_value.setText(str(pattern.flags))
 
+        # DATE
         d = pattern.date_time
-        date = d[4:6] + '/' + d[6:8] + '/' + d[0:4] + ' ' + d[8:10] + ':' + d[10:12] + ':' + d[12:14]
+        date_yyyy = d[0:4]
+        if date_yyyy[0] == b'\x00':
+            date_yyyy += 2000
+        date_mm = d[4:6]
+        date_dd = d[6:8]
+        date_hh = d[8:10]
+        date_mi = d[10:12]
+        date_ss = d[12:14]
+        if date_yyyy == b'\x00\x00\x00\x00':
+            date_yyyy = '????'
+        if date_mm == b'\x00\x00':
+            date_mm = '??'
+        if date_dd == b'\x00\x00':
+            date_dd = '??'
+        if date_hh == b'\x00\x00':
+            date_hh = '??'
+        if date_mi == b'\x00\x00':
+            date_mi = '??'
+        if date_ss == b'\x00\x00':
+            date_ss = '??'
+        date = date_mm + '/' + date_dd + '/' + date_yyyy + ' ' + date_hh + ':' + date_mi + ':' + date_ss
         self.date_name_value.setText(date)
 
         self.version_name_value.setText(pattern.version)
-        self.unknown_name_value.setText(pattern.hoop_name)
+        self.unknown_name_value.setText(pattern.unknown)
         self.color_changes_name_value.setText(str(pattern.threads))
 
-        size = pattern.data_length / 2
+        size = pattern.data_size / 2
         self.points_length_name_value.setText(f'{size:,}')
         self.hoop_name_value.setText(pattern.hoop_name)
 

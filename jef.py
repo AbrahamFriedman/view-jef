@@ -19,6 +19,8 @@ struct.unpack formats:
     Character < -> decode using little-endian byte order
     Format  C Type             Python Type  Size
     b       signed char        integer      1
+    h       short              integer      2
+    H       unsigned short     integer      2
     i       int                integer      4
     I       unsigned int       integer      4
 
@@ -96,10 +98,11 @@ class Pattern:
             extends4, extends5) = self.parse_file(d)
 
         # OFFSET
-        start_of_stitches = struct.unpack("<I", offset)[0]
-        data = d[start_of_stitches:]
+        self.start_of_stitches = struct.unpack("<I", offset)[0]
+        data = d[self.start_of_stitches:]
 
         # FLAGS
+        self.flags = struct.unpack("<I", offset)[0]
 
         # DATE
         # TODO Date/time dosn't seem to be parsed out of the file correctly for the WAMALUG logo
@@ -107,13 +110,23 @@ class Pattern:
         # if struct.unpack("<I", d[4:8])[0] & 1:
         #     self.date_time = time.strptime(d[8:22], "%Y%m%d%H%M%S")
         date_as_bytes = struct.unpack("<14s", date)  # Parse 14 characters in YYYYMMDDHHMMSS format in bytes
+
         self.date_time = date_as_bytes[0].decode("utf-8")  # Convert bytes to str
+
+        # Convert missing values to zero
+        valid_date = ''
+        for i in range(0, 14):
+            if self.date_time[i] not in '0123456789':
+                valid_date = valid_date + '?'
+            else:
+                valid_date = valid_date + self.date_time[i]
+        self.date_time = valid_date
 
         # VERSION
         if version == b"\x00":
             self.version = "Undefined"
         else:
-            self.version = struct.unpack(("<1s", version))
+            self.version = struct.unpack(("<1s", version))[0]
 
             if self.version == 'm':
                 self.version = '12000'
@@ -135,6 +148,10 @@ class Pattern:
                 self.version = 'Unknown'
 
         # UNKNOWN
+        if unknown == b'\x00':
+            self.unknown = "Undefined"
+        else:
+            self.unknown = "Unknown"
 
         # COLOR COUNT
         self.threads = struct.unpack("<I", color_count)[0]
